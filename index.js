@@ -34,8 +34,45 @@ async function run() {
 
     const serviceCollection = client.db("serviceDB").collection("services");
     const usersCollection = client.db("serviceDB").collection("users");
-
+    const commentsCollection = client.db("serviceDB").collection("comments");
+    //comments
+    app.post("/comment/add",async(req,res)=>{
+      const doc=req.body;
+      console.log(doc);
+      const result =await commentsCollection.insertOne(doc);
+      res.send(result)
+    })
+    app.get('/comments/:id',async(req,res)=>{
+      const id=req.params.id;
+        const query = { serviceID: id };
+        const result = await commentsCollection.find(query).toArray();
+        res.send(result)
+    })
     //services
+    app.patch('/service/update/:id',async(req,res)=>{
+      const id=req.params.id;
+      const doc=req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          category:doc.category,
+            image:doc.image,
+            price: doc.price,
+            service_details:doc.service_details,
+            subtitle:doc.subtitle,
+            title:doc.title,
+            unit:doc.unit,
+            
+            service_includes: {
+              whats_included: [doc.incluide1, doc.incluide2, doc.incluide3],
+              whats_excluded: [doc.excluide1, doc.excluide2, doc.excluide3],
+              available_services: [doc.available1, doc.available2, doc.available3],
+            }
+        },
+      };
+      const result = await serviceCollection.updateOne(filter, updateDoc );
+      res.send(result)
+    })
     app.delete('/service/:id',async(req,res)=>{
       const id=req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -78,7 +115,7 @@ async function run() {
       const query = { useremail: email };
       const movie = await usersCollection.findOne(query);
       // console.log(movie);
-      res.send({role:movie.role})
+      res.send({role:movie?.role})
 
     })
     app.post('/user',async(req,res)=>{
