@@ -4,12 +4,18 @@ const app=express()
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require('stripe')(process.env.Payment_Secret)
+const port = process.env.PORT || 5000;
 
 //midlleware
-app.use(cors())
+// app.use(cors())
+const corsOptions ={
+  origin:'*',
+  credentials:true,
+  optionSuccessStatus:200,
+  }
+  app.use(cors(corsOptions))
 app.use(express.json())
 
-const port = process.env.PORT || 5000;
 
 app.get('/',(req,res)=>{
     res.send("Hero server is running ...")
@@ -31,7 +37,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const serviceCollection = client.db("serviceDB").collection("services");
     const usersCollection = client.db("serviceDB").collection("users");
@@ -48,14 +54,13 @@ async function run() {
     app.post('/payments/:id', async (req, res) => {
       const payment = req.body;
       const id = req.params.id;
-      console.log(id);
+      // console.log(id);
       const insertResult = await paymentCollection.insertOne(payment);
-
       const query = { _id: new ObjectId(id) }
       const deleteResult = await cartCollection.deleteOne(query)
-
       res.send({ insertResult, deleteResult });
     })
+
     //create payment intent
     app.post('/create-payment-intent', async (req, res) => {
       const { price } = req.body;
@@ -71,7 +76,8 @@ async function run() {
         clientSecret: paymentIntent.client_secret,
       });
     })
-    //cart
+
+    //cart related api
     app.delete("/cart/delete/:id",async(req,res)=>{
       const id=req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -92,32 +98,38 @@ async function run() {
         res.send(result)
       }
     })
+
     app.get("/cart/:email",async(req,res)=>{
       const email=req.params.email;
       const query = { useremail: email };
         const result = await cartCollection.find(query).toArray();
         res.send(result)
     })
+
     app.post('/cart/add',async(req,res)=>{
       const doc=req.body;
       // console.log(doc);
       const result =await cartCollection.insertOne(doc);
       res.send(result)
     })
-    //comments
+
+    //comments related api
     app.post("/comment/add",async(req,res)=>{
       const doc=req.body;
       // console.log(doc);
       const result =await commentsCollection.insertOne(doc);
       res.send(result)
     })
+
     app.get('/comments/:id',async(req,res)=>{
       const id=req.params.id;
         const query = { serviceID: id };
         const result = await commentsCollection.find(query).toArray();
         res.send(result)
     })
-    //services
+
+    //services related api
+
     app.patch('/service/update/:id',async(req,res)=>{
       const id=req.params.id;
       const doc=req.body;
@@ -131,7 +143,6 @@ async function run() {
             subtitle:doc.subtitle,
             title:doc.title,
             unit:doc.unit,
-            
             service_includes: {
               whats_included: [doc.incluide1, doc.incluide2, doc.incluide3],
               whats_excluded: [doc.excluide1, doc.excluide2, doc.excluide3],
@@ -166,7 +177,7 @@ async function run() {
         res.send(result)
     })
 
-    //Users
+    //Users related api
     app.patch('/user/admin/:email',async(req,res)=>{
       const email=req.params.email;
       const filter = { useremail: email };
