@@ -3,6 +3,7 @@ const cors = require('cors');
 const app=express()
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require('stripe')(process.env.Payment_Secret)
 
 //midlleware
 app.use(cors())
@@ -35,10 +36,78 @@ async function run() {
     const serviceCollection = client.db("serviceDB").collection("services");
     const usersCollection = client.db("serviceDB").collection("users");
     const commentsCollection = client.db("serviceDB").collection("comments");
+    const cartCollection = client.db("serviceDB").collection("cart");
+    const paymentCollection = client.db("serviceDB").collection("payment");
+
+
+    // payment related api
+    app.get("/payments",async(req,res)=>{
+        const result = await paymentCollection.find().toArray();
+        res.send(result)
+    })
+    app.post('/payments/:id', async (req, res) => {
+      const payment = req.body;
+      const id = req.params.id;
+      console.log(id);
+      const insertResult = await paymentCollection.insertOne(payment);
+
+      const query = { _id: new ObjectId(id) }
+      const deleteResult = await cartCollection.deleteOne(query)
+
+      res.send({ insertResult, deleteResult });
+    })
+    //create payment intent
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: [
+          "card"
+        ],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    })
+    //cart
+    app.delete("/cart/delete/:id",async(req,res)=>{
+      const id=req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await cartCollection.deleteOne(query);
+      res.send(result)
+    })
+    
+    app.get("/cart",async(req,res)=>{
+      const id=req.query;
+      // console.log(id);
+      if(id){
+        const query={_id: new ObjectId(id?.id)}
+        const result = await cartCollection.find(query).toArray();
+        res.send(result)
+      }
+      else{
+        const result = await cartCollection.find().toArray();
+        res.send(result)
+      }
+    })
+    app.get("/cart/:email",async(req,res)=>{
+      const email=req.params.email;
+      const query = { useremail: email };
+        const result = await cartCollection.find(query).toArray();
+        res.send(result)
+    })
+    app.post('/cart/add',async(req,res)=>{
+      const doc=req.body;
+      // console.log(doc);
+      const result =await cartCollection.insertOne(doc);
+      res.send(result)
+    })
     //comments
     app.post("/comment/add",async(req,res)=>{
       const doc=req.body;
-      console.log(doc);
+      // console.log(doc);
       const result =await commentsCollection.insertOne(doc);
       res.send(result)
     })
