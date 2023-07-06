@@ -166,8 +166,18 @@ async function run() {
 
     })
     app.get('/services',async(req,res)=>{
-        const cursor =await serviceCollection.find().toArray();
-        res.send(cursor)
+      const search =req.query.search;
+      // console.log(search);
+      if(search){
+        const query={title: {$regex: search, $options:"i"}}
+      const cursor =await serviceCollection.find(query).toArray();
+      res.send(cursor)
+      }
+      else{
+      const cursor =await serviceCollection.find().toArray();
+      res.send(cursor)
+      }
+      
     })
     app.get('/service/:id',async(req,res)=>{
         const id=req.params.id;
