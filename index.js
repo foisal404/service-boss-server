@@ -13,7 +13,8 @@ const corsOptions ={
   credentials:true,
   optionSuccessStatus:200,
   }
-  app.use(cors(corsOptions))
+app.use(cors(corsOptions))
+
 app.use(express.json())
 
 
@@ -188,6 +189,20 @@ async function run() {
     })
 
     //Users related api
+    // app.patch('/user/setaddress/:email',async(req,res)=>{
+    //   const email=req.params.email;
+    //   const add=req.body;
+    //   console.log(add,email)
+    //   // const filter = { useremail: email };
+    //   // const updateDoc = {
+    //   //   $set: {
+    //   //     address: address
+    //   //   },
+    //   // };
+    //   // console.log(updateDoc)
+    //   // const result = await usersCollection.updateOne(filter, updateDoc);
+    //   // res.send(result)
+    // })
     app.patch('/user/admin/:email',async(req,res)=>{
       const email=req.params.email;
       const filter = { useremail: email };
